@@ -626,7 +626,7 @@ def run():
         angle = 0
 
         if paused == False:
-            for steering_angle in range(-30, 31, 5):
+            for _, steering_angle in enumerate(STEERING_ANGLE):
                 params["steering_angle"] = steering_angle
 
                 reward = deepracer.reward_function(params)
