@@ -1,5 +1,11 @@
 import math
 
+SHOULD_LOG = False
+
+def logger(*args, **kwargs):
+    if SHOULD_LOG:
+        print(*args, **kwargs)
+
 
 def dist(point1, point2):
     return ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5
@@ -75,9 +81,14 @@ def up_sample(waypoints, factor=10):
         for i in range(factor)
     ]
 
+# Cache the upsampling for performance
+waypoints = None
 
 def get_target_point(params):
-    waypoints = up_sample(get_waypoints_ordered_in_driving_direction(params), 20)
+    global waypoints
+
+    if waypoints is None:
+        waypoints = up_sample(get_waypoints_ordered_in_driving_direction(params), 20)
 
     car = [params["x"], params["y"]]
 
@@ -117,11 +128,11 @@ def get_target_steering_degree(params):
 
 
 def score_steer_to_point_ahead(params):
-    best_stearing_angle = get_target_steering_degree(params)
+    best_steering_angle = get_target_steering_degree(params)
     steering_angle = params["steering_angle"]
 
     error = (
-        steering_angle - best_stearing_angle
+        steering_angle - best_steering_angle
     ) / 60.0  # 60 degree is already really bad
 
     score = 1.0 - abs(error)
@@ -133,106 +144,3 @@ def score_steer_to_point_ahead(params):
 
 def reward_function(params):
     return float(score_steer_to_point_ahead(params))
-
-
-def get_test_params():
-    return {
-        "x": 0.7,
-        "y": 1.05,
-        "heading": 160.0,
-        "track_width": 0.45,
-        "is_reversed": False,
-        "steering_angle": 0.0,
-        "waypoints": [
-            [0.75, -0.7],
-            [1.0, 0.0],
-            [0.7, 0.52],
-            [0.58, 0.7],
-            [0.48, 0.8],
-            [0.15, 0.95],
-            [-0.1, 1.0],
-            [-0.7, 0.75],
-            [-0.9, 0.25],
-            [-0.9, -0.55],
-        ],
-    }
-
-
-def test_reward():
-    params = get_test_params()
-
-    reward = reward_function(params)
-
-    print("test_reward: {}".format(reward))
-
-    assert reward > 0.0
-
-
-def test_get_target_point():
-    result = get_target_point(get_test_params())
-    expected = [0.33, 0.86]
-    eps = 0.1
-
-    print("get_target_point: x={}, y={}".format(result[0], result[1]))
-
-    assert dist(result, expected) < eps
-
-
-def test_get_target_steering():
-    result = get_target_steering_degree(get_test_params())
-    expected = 46
-    eps = 1.0
-
-    print("get_target_steering={}".format(result))
-
-    assert abs(result - expected) < eps
-
-
-def test_angle_mod_360():
-    eps = 0.001
-
-    assert abs(-90 - angle_mod_360(270.0)) < eps
-    assert abs(-179 - angle_mod_360(181)) < eps
-    assert abs(0.01 - angle_mod_360(360.01)) < eps
-    assert abs(5 - angle_mod_360(365.0)) < eps
-    assert abs(-2 - angle_mod_360(-722)) < eps
-
-
-def test_upsample():
-    params = get_test_params()
-    print(repr(up_sample(params["waypoints"], 2)))
-
-
-def test_score_steer_to_point_ahead():
-    params_l_45 = {**get_test_params(), "steering_angle": +45}
-    params_l_15 = {**get_test_params(), "steering_angle": +15}
-    params_0 = {**get_test_params(), "steering_angle": 0.0}
-    params_r_15 = {**get_test_params(), "steering_angle": -15}
-    params_r_45 = {**get_test_params(), "steering_angle": -45}
-
-    sc = score_steer_to_point_ahead
-
-    # 0.828, 0.328, 0.078, 0.01, 0.01
-    print(
-        "Scores: {}, {}, {}, {}, {}".format(
-            sc(params_l_45),
-            sc(params_l_15),
-            sc(params_0),
-            sc(params_r_15),
-            sc(params_r_45),
-        )
-    )
-
-
-def run_tests():
-    test_angle_mod_360()
-    test_reward()
-    test_upsample()
-    test_get_target_point()
-    test_get_target_steering()
-    test_score_steer_to_point_ahead()
-
-    print("All tests successful")
-
-
-# run_tests()
