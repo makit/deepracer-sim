@@ -28,8 +28,8 @@ TAIL_LENGTH = 100
 
 MIN_REWARD = 0.0001
 
-STEERING_ANGLE = [-30, -20, -10, 0, 10, 20, 30]
-SPEEDS = [2, 4]
+STEERING_ANGLE = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30]
+SPEEDS = [1, 2, 4]
 
 DEFAULT_SPEED = 3.0
 
@@ -421,6 +421,14 @@ def calculate_reward(params, speed, steering_angle):
     reward = deepracer.reward_function(params_copy)
     return {"reward": reward, "angle": steering_angle, "speed": speed}
 
+def find_max_reward(futures):
+    max_reward = {"reward": float("-inf")}
+    for future in concurrent.futures.as_completed(futures):
+        reward = future.result()
+        if reward["reward"] > max_reward["reward"]:
+            max_reward = reward
+    return max_reward
+
 def run():
     global g_scr_adjust
     global g_scr_rate
@@ -655,11 +663,7 @@ def run():
                         task = executor.submit(calculate_reward, params, speed, steering_angle)
                         tasks.append(task)
 
-                # Collect results as they become available
-                for future in concurrent.futures.as_completed(tasks):
-                    rewards.append(future.result())
-
-        max_reward = max(rewards, key=lambda x: x["reward"])
+                max_reward = find_max_reward(tasks)
 
         angle = max_reward["angle"]
         speed = max_reward["speed"]
