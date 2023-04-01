@@ -7,8 +7,6 @@ class Track_Loader:
 
     loaded_route = np.load("./routes/" + route + ".npy")
 
-    loaded_route = np.flip(loaded_route, 0)
-
     self.center_waypoints = [[r[0], r[1]] for r in loaded_route]
     self.inside_waypoints = [[r[2], r[3]] for r in loaded_route]
     self.outside_waypoints = [[r[4], r[5]] for r in loaded_route]
