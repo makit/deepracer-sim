@@ -10,10 +10,11 @@ import copy
 
 from pygame.math import Vector2
 
-from tracks import track202303 as track
+from track_loader import Track_Loader
 
 from functions import TwoDigits as deepracer
 
+TRACK = "FS_June2020"
 
 TITLE = "DeepRacer Simulator"
 
@@ -21,7 +22,7 @@ DEBUG_LOG = False
 
 FRAME_RATE = 15  # fps - DeepRacer runs the function at 15 fps
 
-SCREEN_RATE = 70  # % of screen size
+SCREEN_RATE = 100  # % of screen size
 
 TAIL_LENGTH = 100
 
@@ -64,6 +65,7 @@ g_scr_rate = SCREEN_RATE
 g_scr_width = 0
 g_scr_height = 0
 
+track = Track_Loader(TRACK)
 
 def parse_args():
     p = argparse.ArgumentParser(description=TITLE)
@@ -411,6 +413,13 @@ class Car:
 
         return self.pos, (self.angle * -1)
 
+# Define a function to calculate reward for a given speed and steering angle
+def calculate_reward(params, speed, steering_angle):
+    params_copy = copy.deepcopy(params) # Deep copy the params dict
+    params_copy["steering_angle"] = steering_angle
+    params_copy["speed"] = speed
+    reward = deepracer.reward_function(params_copy)
+    return {"reward": reward, "angle": steering_angle, "speed": speed}
 
 def run():
     global g_scr_adjust
@@ -639,19 +648,11 @@ def run():
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 rewards = []
 
-                # Define a function to calculate reward for a given speed and steering angle
-                def calculate_reward(speed, steering_angle):
-                    params_copy = copy.deepcopy(params) # Deep copy the params dict
-                    params_copy["steering_angle"] = steering_angle
-                    params_copy["speed"] = speed
-                    reward = deepracer.reward_function(params_copy)
-                    return {"reward": reward, "angle": steering_angle, "speed": speed}
-
                 # Submit tasks to the thread pool
                 tasks = []
                 for speed in SPEEDS:
                     for steering_angle in STEERING_ANGLE:
-                        task = executor.submit(calculate_reward, speed, steering_angle)
+                        task = executor.submit(calculate_reward, params, speed, steering_angle)
                         tasks.append(task)
 
                 # Collect results as they become available
