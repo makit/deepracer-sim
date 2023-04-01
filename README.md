@@ -28,7 +28,6 @@ py -m pip install -U pygame --user
 ## Running
 
 ```bash
-### Manual Driving
 python sim.py
 
 ### Drawing Lines and Specific Speed

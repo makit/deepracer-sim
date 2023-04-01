@@ -5,6 +5,8 @@ import argparse
 import math
 import pygame
 import time
+import concurrent.futures
+import copy
 
 from pygame.math import Vector2
 
@@ -17,9 +19,9 @@ TITLE = "DeepRacer Simulator"
 
 DEBUG_LOG = False
 
-FRAME_RATE = 15  # fps
+FRAME_RATE = 15  # fps - DeepRacer runs the function at 15 fps
 
-SCREEN_RATE = 100  # % of screen size
+SCREEN_RATE = 70  # % of screen size
 
 TAIL_LENGTH = 100
 
@@ -28,7 +30,7 @@ MIN_REWARD = 0.0001
 STEERING_ANGLE = [-30, -20, -10, 0, 10, 20, 30]
 SPEEDS = [2, 4]
 
-DEFAULT_SPEED = 2.0
+DEFAULT_SPEED = 3.0
 
 BOTS_COUNT = 0
 BOTS_SPEED = 0
@@ -626,7 +628,6 @@ def run():
             "waypoints": waypoints,
             "x": pos[0],
             "y": pos[1],
-            "surface": surface,
         }
 
         # pick target
@@ -635,22 +636,34 @@ def run():
         angle = 0
 
         if paused == False:
-            for _, speed in enumerate(SPEEDS):
-                for _, steering_angle in enumerate(STEERING_ANGLE):
-                    params["steering_angle"] = steering_angle
-                    params["speed"] = speed
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                rewards = []
 
-                    reward = deepracer.reward_function(params)
+                # Define a function to calculate reward for a given speed and steering angle
+                def calculate_reward(speed, steering_angle):
+                    params_copy = copy.deepcopy(params) # Deep copy the params dict
+                    params_copy["steering_angle"] = steering_angle
+                    params_copy["speed"] = speed
+                    reward = deepracer.reward_function(params_copy)
+                    return {"reward": reward, "angle": steering_angle, "speed": speed}
 
-                    rewards.append({"reward": reward, "angle": steering_angle, "speed": speed})
+                # Submit tasks to the thread pool
+                tasks = []
+                for speed in SPEEDS:
+                    for steering_angle in STEERING_ANGLE:
+                        task = executor.submit(calculate_reward, speed, steering_angle)
+                        tasks.append(task)
+
+                # Collect results as they become available
+                for future in concurrent.futures.as_completed(tasks):
+                    rewards.append(future.result())
 
         max_reward = max(rewards, key=lambda x: x["reward"])
 
         angle = max_reward["angle"]
         speed = max_reward["speed"]
 
-        print("Chosen Speed:", speed)
-        print("Chosen Angle:", angle)
+        print("Chosen Speed:", speed, " Chosen Angle:", angle)
 
         if paused == False and args.debug:
             print("pick {} {}".format(max_reward, rewards))
