@@ -4,7 +4,6 @@
 import argparse
 import math
 import pygame
-import random
 import time
 
 from pygame.math import Vector2
@@ -27,7 +26,9 @@ TAIL_LENGTH = 100
 MIN_REWARD = 0.0001
 
 STEERING_ANGLE = [-30, -20, -10, 0, 10, 20, 30]
-SPEED = 2.0
+SPEEDS = [2, 4]
+
+DEFAULT_SPEED = 2.0
 
 BOTS_COUNT = 0
 BOTS_SPEED = 0
@@ -67,7 +68,7 @@ def parse_args():
     p.add_argument("-c", "--crashed", default=False, action="store_true", help="crashed")
     p.add_argument("-d", "--draw-lines", default=False, action="store_true", help="draw lines")
     p.add_argument("-f", "--full-screen", default=False, action="store_true", help="full screen")
-    p.add_argument("-s", "--speed", type=float, default=SPEED, help="speed")
+    p.add_argument("-s", "--speed", type=float, default=DEFAULT_SPEED, help="speed")
     p.add_argument("--bots-count", type=int, default=BOTS_COUNT, help="bots count")
     p.add_argument("--bots-speed", type=float, default=BOTS_SPEED, help="bots speed")
     p.add_argument("--debug", default=DEBUG_LOG, action="store_true", help="debug")
@@ -419,9 +420,10 @@ def run():
 
     prev_time = float("inf")
     record = float("inf")
+    total_reward = float(0)
 
     steps = 0
-    prev_prograss = 100
+    prev_progress = 100
 
     start_time = time.time()
 
@@ -476,6 +478,18 @@ def run():
     latest = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
     latest_rect = laptime.get_rect(center=(20, 60))
 
+    # speed
+    speed_display = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
+    speed_display_rect = speed_display.get_rect(center=(200, 30))
+
+    # reward
+    reward_display = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
+    reward_display_rect = reward_display.get_rect(center=(200, 60))
+
+    # total_reward
+    total_reward_display = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
+    total_reward_display_rect = total_reward_display.get_rect(center=(200, 90))
+
     # car angle
     car_angle = get_degrees(waypoints[0], waypoints[1])
 
@@ -529,11 +543,11 @@ def run():
 
         # progress
         progress = (closest_idx / waypoints_length) * 100
-        if steps > 0 and prev_prograss > progress:
+        if steps > 0 and prev_progress > progress:
             steps = 0
             start_time = time.time()
         steps += 1
-        prev_prograss = progress
+        prev_progress = progress
 
         if args.debug:
             print("")
@@ -616,26 +630,27 @@ def run():
         }
 
         # pick target
-        indexes = []
         rewards = []
-
-        pick = -1
-        max_reward = MIN_REWARD
-
         target = []
         angle = 0
 
         if paused == False:
-            for _, steering_angle in enumerate(STEERING_ANGLE):
-                params["steering_angle"] = steering_angle
+            for _, speed in enumerate(SPEEDS):
+                for _, steering_angle in enumerate(STEERING_ANGLE):
+                    params["steering_angle"] = steering_angle
+                    params["speed"] = speed
 
-                reward = deepracer.reward_function(params)
+                    reward = deepracer.reward_function(params)
 
-                rewards.append({"reward": reward, "angle": steering_angle})
+                    rewards.append({"reward": reward, "angle": steering_angle, "speed": speed})
 
         max_reward = max(rewards, key=lambda x: x["reward"])
 
         angle = max_reward["angle"]
+        speed = max_reward["speed"]
+
+        print("Chosen Speed:", speed)
+        print("Chosen Angle:", angle)
 
         if paused == False and args.debug:
             print("pick {} {}".format(max_reward, rewards))
@@ -650,6 +665,14 @@ def run():
         s = "{:3.3f}".format(race_time)
         laptime = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
 
+        # speed
+        speed_display = font.render("Speed: " + str(speed), True, COLOR_TEXT, COLOR_FLOOR)
+
+        # reward
+        total_reward += max_reward["reward"]
+        reward_display = font.render("Reward: " + "{:3f}".format(max_reward["reward"]), True, COLOR_TEXT, COLOR_FLOOR)
+        total_reward_display = font.render("Total Reward: " + "{:3f}".format(total_reward), True, COLOR_TEXT, COLOR_FLOOR)
+
         if progress == 0 and prev_time > 5:
             record = prev_time
         prev_time = race_time
@@ -660,6 +683,9 @@ def run():
             latest = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
 
         surface.blit(laptime, laptime_rect)
+        surface.blit(speed_display, speed_display_rect)
+        surface.blit(reward_display, reward_display_rect)
+        surface.blit(total_reward_display, total_reward_display_rect)
         surface.blit(latest, latest_rect)
 
         # draw lines
