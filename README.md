@@ -22,6 +22,9 @@ pip3 install pygame
 
 ### Windows
 ```bash
+pip install -r requirements.txt
+
+## or
 py -m pip install -U pygame --user
 ```
 

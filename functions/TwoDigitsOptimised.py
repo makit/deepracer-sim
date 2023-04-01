@@ -102,7 +102,7 @@ def get_target_point(params):
     _, i_closest = kdtree.query([car])
     n = len(waypoints)
 
-    waypoints_starting_with_closest = [waypoints[(i + i_closest.item()) % n] for i in np.arange(n)]
+    waypoints_starting_with_closest = [waypoints[(i + i_closest.item()) % n] for i in range(n)]
 
     r = params["track_width"] * 0.9
 
@@ -113,7 +113,8 @@ def get_target_point(params):
         # this can only happen if we choose r as big as the entire track
         return waypoints[i_closest.item()]
 
-    return waypoints_starting_with_closest[i_first_outside]
+    rotated_waypoints = [waypoints_starting_with_closest[(i + i_first_outside) % n] for i in range(n)]
+    return rotated_waypoints[0]
 
 
 def get_target_steering_degree(params):

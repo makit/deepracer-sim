@@ -1,1 +1,4 @@
 pygame
+scipy
+shapely
+numpy
