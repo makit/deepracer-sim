@@ -81,9 +81,14 @@ def up_sample(waypoints, factor=10):
         for i in range(factor)
     ]
 
+# Cache the upsampling for performance
+waypoints = None
 
 def get_target_point(params):
-    waypoints = up_sample(get_waypoints_ordered_in_driving_direction(params), 20)
+    global waypoints
+
+    if waypoints is None:
+        waypoints = up_sample(get_waypoints_ordered_in_driving_direction(params), 20)
 
     car = [params["x"], params["y"]]
 
