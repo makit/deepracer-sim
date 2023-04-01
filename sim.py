@@ -12,9 +12,9 @@ from pygame.math import Vector2
 
 from track_loader import Track_Loader
 
-from functions import TwoDigits as deepracer
+from functions import TwoDigitsOptimised as deepracer
 
-TRACK = "FS_June2020"
+TRACK = "arctic_pro"
 
 TITLE = "DeepRacer Simulator"
 

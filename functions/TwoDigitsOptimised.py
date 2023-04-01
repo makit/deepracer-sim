@@ -1,4 +1,6 @@
 import math
+import numpy as np
+from scipy.spatial import KDTree
 
 SHOULD_LOG = False
 
@@ -83,22 +85,24 @@ def up_sample(waypoints, factor=10):
 
 # Cache the upsampling for performance
 waypoints = None
+kdtree = None
 
 def get_target_point(params):
     global waypoints
+    global kdtree
 
     if waypoints is None:
         waypoints = up_sample(get_waypoints_ordered_in_driving_direction(params), 20)
 
+    if kdtree is None:
+        kdtree = KDTree(waypoints)
+
     car = [params["x"], params["y"]]
 
-    distances = [dist(p, car) for p in waypoints]
-    min_dist = min(distances)
-    i_closest = distances.index(min_dist)
-
+    _, i_closest = kdtree.query([car])
     n = len(waypoints)
 
-    waypoints_starting_with_closest = [waypoints[(i + i_closest) % n] for i in range(n)]
+    waypoints_starting_with_closest = [waypoints[(i + i_closest.item()) % n] for i in np.arange(n)]
 
     r = params["track_width"] * 0.9
 
@@ -107,7 +111,7 @@ def get_target_point(params):
 
     if i_first_outside < 0:
         # this can only happen if we choose r as big as the entire track
-        return waypoints[i_closest]
+        return waypoints[i_closest.item()]
 
     return waypoints_starting_with_closest[i_first_outside]
 
