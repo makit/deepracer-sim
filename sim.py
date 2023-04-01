@@ -668,7 +668,7 @@ def run():
         angle = max_reward["angle"]
         speed = max_reward["speed"]
 
-        print("Chosen Speed:", speed, " Chosen Angle:", angle)
+        print("Chosen Speed:", speed, " Chosen Angle:", angle, " Reward:", max_reward["reward"])
 
         if paused == False and args.debug:
             print("pick {} {}".format(max_reward, rewards))
@@ -696,7 +696,7 @@ def run():
         prev_time = race_time
 
         # latest
-        if record < 60 and record > 5:
+        if record < 120 and record > 5:
             s = "{:3.3f}".format(record)
             latest = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
 
