@@ -14,7 +14,7 @@ from track_loader import Track_Loader
 
 from functions import TwoDigitsOptimised as deepracer
 
-TRACK = "arctic_pro"
+TRACK = "jyllandsringen_pro_cw"
 
 TITLE = "DeepRacer Simulator"
 
@@ -22,7 +22,7 @@ DEBUG_LOG = False
 
 FRAME_RATE = 15  # fps - DeepRacer runs the function at 15 fps
 
-SCREEN_RATE = 100  # % of screen size
+SCREEN_RATE = 80  # % of screen size
 
 TAIL_LENGTH = 100
 
