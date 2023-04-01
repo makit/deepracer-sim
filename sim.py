@@ -625,10 +625,10 @@ def run():
 
         # dummy
         params = {
-            "all_wheels_on_track": offtrack == False,
+            "all_wheels_on_track": offtrack == False, # TODO: This isn't true
             "closest_objects": closest_objects,
             "closest_waypoints": closest_waypoints,
-            "crashed": crashed,
+            "is_crashed": crashed,
             "distance_from_center": closest_dist,
             "heading": heading,
             "is_left_of_center": is_left_of_center,
@@ -636,7 +636,7 @@ def run():
             "objects_distance": objects_distance,
             "objects_left_of_center": objects_left_of_center,
             "objects_location": objects_location,
-            "offtrack": offtrack,
+            "is_offtrack": offtrack,
             "progress": progress,
             "speed": args.speed,
             "steering_angle": 0,
