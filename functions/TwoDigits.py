@@ -1,5 +1,11 @@
 import math
 
+SHOULD_LOG = False
+
+def logger(*args, **kwargs):
+    if SHOULD_LOG:
+        print(*args, **kwargs)
+
 
 def dist(point1, point2):
     return ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5
@@ -163,7 +169,7 @@ def test_reward():
 
     reward = reward_function(params)
 
-    print("test_reward: {}".format(reward))
+    logger("test_reward: {}".format(reward))
 
     assert reward > 0.0
 
@@ -173,7 +179,7 @@ def test_get_target_point():
     expected = [0.33, 0.86]
     eps = 0.1
 
-    print("get_target_point: x={}, y={}".format(result[0], result[1]))
+    logger("get_target_point: x={}, y={}".format(result[0], result[1]))
 
     assert dist(result, expected) < eps
 
@@ -183,7 +189,7 @@ def test_get_target_steering():
     expected = 46
     eps = 1.0
 
-    print("get_target_steering={}".format(result))
+    logger("get_target_steering={}".format(result))
 
     assert abs(result - expected) < eps
 
@@ -200,7 +206,7 @@ def test_angle_mod_360():
 
 def test_upsample():
     params = get_test_params()
-    print(repr(up_sample(params["waypoints"], 2)))
+    logger(repr(up_sample(params["waypoints"], 2)))
 
 
 def test_score_steer_to_point_ahead():
@@ -213,7 +219,7 @@ def test_score_steer_to_point_ahead():
     sc = score_steer_to_point_ahead
 
     # 0.828, 0.328, 0.078, 0.01, 0.01
-    print(
+    logger(
         "Scores: {}, {}, {}, {}, {}".format(
             sc(params_l_45),
             sc(params_l_15),
@@ -232,7 +238,7 @@ def run_tests():
     test_get_target_steering()
     test_score_steer_to_point_ahead()
 
-    print("All tests successful")
+    logger("All tests successful")
 
 
 # run_tests()

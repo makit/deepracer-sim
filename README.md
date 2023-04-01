@@ -1,11 +1,16 @@
-# deepracer-sim
+# AWS DeepRacer Reward Function Simulator
 
-DeepRacer Simulator
+Simulates the AWS DeepRacer vehicle driving a track by using a provided Reward Function.
 
-## init
+On each step the Reward Function is ran for a series of Steering Angles and Speeds, and the one with the highest reward is chosen.
 
+This does not simulate how the actual DeepRacer learns, which picks Steering Angles and Speeds at random and then when the vehicle eventually crashes it looks at the whole "episode" to learn.
+
+This means that the simulator is a good way to check that the Reward Function is returning rewards that are expected, but when actually training the results will be different.
+
+## Installation
+### Mac/Linux
 ```bash
-# on Mac or Ubuntu
 brew install pyenv
 pyenv install 3.8.6
 
@@ -13,22 +18,30 @@ pyenv shell 3.8.6
 
 pip3 install numpy
 pip3 install pygame
+```
 
-# on Windows
+### Windows
+```bash
 py -m pip install -U pygame --user
 ```
 
-## run
+## Running
 
 ```bash
-python3 sim.py
-python3 sim.py -ad -s 1.5
-python3 sim.py -ad -s 1.5 --bots-count 6 --bots-speed 1.0
+### Manual Driving
+python sim.py
+
+### Drawing Lines and Specific Speed
+python sim.py -d -s 1
+
+### With Bots
+python sim.py -d -s 1 --bots-count 6 --bots-speed 1.0
 ```
 
-[![DeepRacer Simulator](http://img.youtube.com/vi/9jSZm7FcqmE/0.jpg)](https://youtu.be/9jSZm7FcqmE?t=0s)
+## Demo
+[DeepRacer Simulator Demo Video](https://youtu.be/9jSZm7FcqmE?t=0s)
 
-## help
+## Trouble Shooting
 
 ```
 python3 sim.py -h

@@ -11,7 +11,7 @@ from pygame.math import Vector2
 
 from tracks import track202303 as track
 
-from functions import custom as deepracer
+from functions import TwoDigits as deepracer
 
 
 TITLE = "DeepRacer Simulator"
@@ -27,7 +27,7 @@ TAIL_LENGTH = 100
 MIN_REWARD = 0.0001
 
 STEERING_ANGLE = [-30, -20, -10, 0, 10, 20, 30]
-SPEED = 1.0
+SPEED = 2.0
 
 BOTS_COUNT = 0
 BOTS_SPEED = 0
@@ -64,7 +64,6 @@ g_scr_height = 0
 
 def parse_args():
     p = argparse.ArgumentParser(description=TITLE)
-    p.add_argument("-a", "--autonomous", default=False, action="store_true", help="autonomous")
     p.add_argument("-c", "--crashed", default=False, action="store_true", help="crashed")
     p.add_argument("-d", "--draw-lines", default=False, action="store_true", help="draw lines")
     p.add_argument("-f", "--full-screen", default=False, action="store_true", help="full screen")
@@ -77,20 +76,6 @@ def parse_args():
 
 def get_distance(coor1, coor2):
     return math.sqrt((coor1[0] - coor2[0]) * (coor1[0] - coor2[0]) + (coor1[1] - coor2[1]) * (coor1[1] - coor2[1]))
-
-
-def up_sample(waypoints, factor=10):
-    p = waypoints
-    n = len(p)
-
-    return [
-        [
-            i / factor * p[int((j + 1) % n)][0] + (1 - i / factor) * p[j][0],
-            i / factor * p[int((j + 1) % n)][1] + (1 - i / factor) * p[j][1],
-        ]
-        for j in range(n)
-        for i in range(factor)
-    ]
 
 
 def get_target(pos, angle, dist):
@@ -374,17 +359,8 @@ class Car:
             # pos
             if self.is_bot:
                 self.pos += self.vel
-            elif keys[pygame.K_UP]:
+            else:
                 self.pos += self.vel
-                self.key_pressed = True
-            elif keys[pygame.K_DOWN]:
-                self.pos -= self.vel
-                self.key_pressed = True
-            elif self.args.autonomous:
-                self.pos += self.vel
-
-        # self.pos[0] = min(max(self.pos[0], 0), g_scr_width)
-        # self.pos[1] = min(max(self.pos[1], 0), g_scr_height)
 
         self.rect.center = get_adjust_point(self.pos)
 
@@ -394,15 +370,7 @@ class Car:
                 if abs(angle) > 0:
                     self.angle += angle
                     self.vel.rotate_ip(-angle)
-            elif keys[pygame.K_LEFT]:
-                self.angle -= 10
-                self.vel.rotate_ip(10)
-                self.key_pressed = True
-            elif keys[pygame.K_RIGHT]:
-                self.angle += 10
-                self.vel.rotate_ip(-10)
-                self.key_pressed = True
-            elif self.args.autonomous:
+            else:
                 if abs(angle) > 0:
                     self.angle += angle
                     self.vel.rotate_ip(-angle)
@@ -669,7 +637,7 @@ def run():
 
         angle = max_reward["angle"]
 
-        if paused == False:
+        if paused == False and args.debug:
             print("pick {} {}".format(max_reward, rewards))
 
         # moving
