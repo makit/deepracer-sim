@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import math
-import pygame
-import time
 import concurrent.futures
 import copy
+import math
+import time
+import pygame
 
 from pygame.math import Vector2
 
@@ -14,38 +14,27 @@ from track_loader import Track_Loader
 
 from functions import TwoDigitsOptimised as deepracer
 
+# Constants
 TRACK = "jyllandsringen_pro_cw"
-
 TITLE = "DeepRacer Simulator"
-
 DEBUG_LOG = False
-
 FRAME_RATE = 15  # fps - DeepRacer runs the function at 15 fps
-
 SCREEN_RATE = 80  # % of screen size
-
 TAIL_LENGTH = 100
-
 MIN_REWARD = 0.0001
-
 STEERING_ANGLE = [-30, -15, -5, 0, 5, 15, 30]
 SPEEDS = [2,3,4]
-
 DEFAULT_SPEED = 3.0
-
 BOTS_COUNT = 0
 BOTS_SPEED = 0
-
 FONT_FACE = "assets/FreeSansBold.ttf"
 FONT_SIZE = 24
-
 CAR_BOT = "assets/car-gray.png"
 CAR_CONTROLLED = "assets/car-blue.png"
 CAR_CRASHED = "assets/car-red.png"
 CAR_OFFTRACK = "assets/car-purple.png"
 CAR_ORIGIN = "assets/car-green.png"
 CAR_WARNED = "assets/car-yello.png"
-
 COLOR_CENTER = (242, 156, 56)
 COLOR_CIRCLE = (250, 250, 250)
 COLOR_FLOOR = (87, 191, 141)
@@ -53,71 +42,73 @@ COLOR_OBJECT = (250, 200, 100)
 COLOR_ROAD = (37, 47, 61)
 COLOR_SHORTCUT = (150, 150, 150)
 COLOR_TRACK = (255, 255, 255)
-
 COLOR_RAY = (100, 255, 255)
 COLOR_RAY_TRACK = (255, 100, 100)
 COLOR_RAY_SHORTCUT = (255, 255, 100)
-
 COLOR_TEXT = (255, 255, 100)
 
+# Global variables
 g_scr_adjust = []
 g_scr_rate = SCREEN_RATE
 g_scr_width = 0
 g_scr_height = 0
-
 track = Track_Loader(TRACK)
 
 def parse_args():
-    p = argparse.ArgumentParser(description=TITLE)
-    p.add_argument("-c", "--crashed", default=False, action="store_true", help="crashed")
-    p.add_argument("-d", "--draw-lines", default=False, action="store_true", help="draw lines")
-    p.add_argument("-f", "--full-screen", default=False, action="store_true", help="full screen")
-    p.add_argument("-s", "--speed", type=float, default=DEFAULT_SPEED, help="speed")
-    p.add_argument("--bots-count", type=int, default=BOTS_COUNT, help="bots count")
-    p.add_argument("--bots-speed", type=float, default=BOTS_SPEED, help="bots speed")
-    p.add_argument("--debug", default=DEBUG_LOG, action="store_true", help="debug")
-    return p.parse_args()
+    params = argparse.ArgumentParser(description=TITLE)
+    params.add_argument("-c", "--crashed", default=False, action="store_true", help="crashed")
+    params.add_argument("-d", "--draw-lines", default=False, action="store_true", help="draw lines")
+    params.add_argument("-f", "--full-screen", default=False, action="store_true", help="full screen")
+    params.add_argument("-s", "--speed", type=float, default=DEFAULT_SPEED, help="speed")
+    params.add_argument("--bots-count", type=int, default=BOTS_COUNT, help="bots count")
+    params.add_argument("--bots-speed", type=float, default=BOTS_SPEED, help="bots speed")
+    params.add_argument("--debug", default=DEBUG_LOG, action="store_true", help="debug")
+    return params.parse_args()
 
-
-def get_distance(coor1, coor2):
-    return math.sqrt((coor1[0] - coor2[0]) * (coor1[0] - coor2[0]) + (coor1[1] - coor2[1]) * (coor1[1] - coor2[1]))
-
+def get_distance(coordinate1, coordinate2):
+    '''Get distance between two points'''
+    return math.sqrt(
+        (coordinate1[0] - coordinate2[0]) *
+        (coordinate1[0] - coordinate2[0]) +
+        (coordinate1[1] - coordinate2[1]) *
+        (coordinate1[1] - coordinate2[1]))
 
 def get_target(pos, angle, dist):
+    '''Get target point from position, angle and distance'''
     return [
         dist * math.cos(math.radians(angle)) + pos[0],
         dist * math.sin(math.radians(angle)) + pos[1],
     ]
 
-
 def degrees(angle):
+    '''Get angle in degrees'''
     if angle > 180:
         angle -= 360
     if angle < -180:
         angle += 360
     return angle
 
+def get_radians(coordinate1, coordinate2):
+    '''Get angle between two coordinates in radians'''
+    return math.atan2((coordinate2[1] - coordinate1[1]), (coordinate2[0] - coordinate1[0]))
 
-def get_radians(coor1, coor2):
-    return math.atan2((coor2[1] - coor1[1]), (coor2[0] - coor1[0]))
-
-
-def get_degrees(coor1, coor2):
-    return degrees(math.degrees(get_radians(coor1, coor2)))
-
+def get_degrees(coordinate1, coordinate2):
+    '''Get angle between two coordinates in degrees'''
+    return degrees(math.degrees(get_radians(coordinate1, coordinate2)))
 
 def get_diff_radians(angle1, angle2):
+    '''Get difference between two angles in radians'''
     diff = (angle1 - angle2) % (2.0 * math.pi)
     if diff >= math.pi:
         diff -= 2.0 * math.pi
     return diff
 
-
 def get_diff_degrees(angle1, angle2):
+    '''Get difference between two angles in degrees'''
     return degrees(math.degrees(get_diff_radians(angle1, angle2)))
 
-
 def get_distance_list(pos, waypoints):
+    '''Get distance between position and each waypoint'''
     dist_list = []
     min_dist = float("inf")
     min_idx = -1
@@ -131,29 +122,29 @@ def get_distance_list(pos, waypoints):
 
     return dist_list, min_dist, min_idx, len(waypoints)
 
-
 def get_angle_list(pos, waypoints):
+    '''Get angle between position and each waypoint'''
     angle_list = []
     dist_list = []
 
-    for i, p in enumerate(waypoints):
-        angle = get_degrees(pos, p)
+    for _, waypoint in enumerate(waypoints):
+        angle = get_degrees(pos, waypoint)
         angle_list.append(angle)
 
-        dist = get_distance(pos, p)
+        dist = get_distance(pos, waypoint)
         dist_list.append(dist)
 
     return angle_list, dist_list, len(waypoints)
 
-
 def draw_line(surface, color, start_pos, end_pos, width):
+    '''Draw line on surface'''
     try:
         pygame.draw.line(surface, color, get_adjust_point(start_pos), get_adjust_point(end_pos), width)
     except Exception as ex:
         print("Error:", ex, start_pos, end_pos, width)
 
-
 def draw_lines(surface, color, closed, lines, width, dashed):
+    '''Draw lines on surface'''
     try:
         if dashed:
             for i in range(0, len(lines) - 1):
@@ -164,25 +155,22 @@ def draw_lines(surface, color, closed, lines, width, dashed):
     except Exception as ex:
         print("Error:", ex, color)
 
-
 def draw_polygon(surface, color, lines):
+    '''Draw polygon on surface'''
     try:
         pygame.draw.polygon(surface, color, get_adjust_points(lines))
     except Exception as ex:
         print("Error:", ex, color)
 
-
 def draw_circle(surface, color, center, radius, width):
+    '''Draw circle on surface'''
     try:
         pygame.draw.circle(surface, color, get_adjust_point(center), get_adjust_length(radius), width)
     except Exception as ex:
         print("Error:", ex, center, radius, width)
 
-
 def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
-    # Calculate the intersection point between two line segments
-    # Based on the algorithm from https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
-
+    '''Calculate the intersection point between two line segments: Based on the algorithm from https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection'''
     det = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
 
     if det == 0:
@@ -197,7 +185,6 @@ def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
         return (x, y)
 
     return None
-
 
 def get_collision(pos, angles, walls, dist):
     left_angle = get_degrees(pos, walls[0])
@@ -224,7 +211,6 @@ def get_collision(pos, angles, walls, dist):
 
     return max(collisions, key=lambda x: get_distance(pos, x)) if len(collisions) > 0 else None
 
-
 def find_destination(pos, heading, inside, outside, closest_idx, track_width):
     start_idx = (closest_idx + 1) % len(inside)
     length_cut = len(inside) // 5
@@ -249,8 +235,8 @@ def find_destination(pos, heading, inside, outside, closest_idx, track_width):
 
     return dest
 
-
 def init_bot(args):
+    '''Initialize bot'''
     bots = []
 
     if args.bots_count < 1:
@@ -276,8 +262,8 @@ def init_bot(args):
 
     return bots
 
-
 class Bot:
+    '''Represents a bot'''
     def __init__(self, car, waypoints, is_left):
         self.car = car
         self.waypoints = waypoints
@@ -318,6 +304,7 @@ class Bot:
 
 
 class Car:
+    '''Represents a car'''
     def __init__(self, args, pos, angle, speed, is_bot):
         # global g_scr_rate
 
@@ -355,8 +342,6 @@ class Car:
         # global g_scr_height
 
         angle *= -1
-
-        keys = pygame.key.get_pressed()
 
         self.key_pressed = False
 
@@ -413,8 +398,8 @@ class Car:
 
         return self.pos, (self.angle * -1)
 
-# Define a function to calculate reward for a given speed and steering angle
 def calculate_reward(params, speed, steering_angle):
+    '''Calculate reward for a given speed and steering angle'''
     params_copy = copy.deepcopy(params) # Deep copy the params dict
     params_copy["steering_angle"] = steering_angle
     params_copy["speed"] = speed
@@ -422,6 +407,7 @@ def calculate_reward(params, speed, steering_angle):
     return {"reward": reward, "angle": steering_angle, "speed": speed}
 
 def find_max_reward(futures):
+    '''Find the max reward from a list of futures'''
     max_reward = {"reward": float("-inf")}
     for future in concurrent.futures.as_completed(futures):
         reward = future.result()
@@ -430,6 +416,7 @@ def find_max_reward(futures):
     return max_reward
 
 def run():
+    '''Main run function for pygame'''
     global g_scr_adjust
     global g_scr_rate
     global g_scr_width
@@ -491,11 +478,11 @@ def run():
     # laptime
     font = pygame.font.Font(FONT_FACE, FONT_SIZE)
 
-    laptime = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
-    laptime_rect = laptime.get_rect(center=(20, 30))
+    lap_time = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
+    lap_time_rect = lap_time.get_rect(center=(20, 30))
 
     latest = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
-    latest_rect = laptime.get_rect(center=(20, 60))
+    latest_rect = lap_time.get_rect(center=(20, 60))
 
     # speed
     speed_display = font.render("", True, COLOR_TEXT, COLOR_FLOOR)
@@ -518,21 +505,21 @@ def run():
     # init bots
     bots = init_bot(args)
 
-    run = True
+    run_game = True
     paused = False
-    while run:
+    while run_game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
+                run_game = False
                 break
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE] or keys[pygame.K_q]:
-            run = False
+            run_game = False
         if keys[pygame.K_SPACE] or keys[pygame.K_p]:
             paused = paused == False
 
-        if run == False:
+        if run_game == False:
             break
 
         # fill bg
@@ -572,7 +559,7 @@ def run():
             print("")
             print("run", steps, progress)
 
-        # offtrack
+        # Off track
         if closest_dist > (track_width * 0.55):
             offtrack = True
             if args.crashed:
@@ -600,7 +587,7 @@ def run():
 
         # draw_bots
         if len(bots) > 0:
-            for i, bot in enumerate(bots):
+            for _, bot in enumerate(bots):
                 bot.move(surface, paused)
 
                 obj_pos = bot.get_pos()
@@ -625,7 +612,7 @@ def run():
 
         # dummy
         params = {
-            "all_wheels_on_track": offtrack == False, # TODO: This isn't true
+            "all_wheels_on_track": not offtrack, # TODO: This isn't true
             "closest_objects": closest_objects,
             "closest_waypoints": closest_waypoints,
             "is_crashed": crashed,
@@ -652,7 +639,7 @@ def run():
         target = []
         angle = 0
 
-        if paused == False:
+        if not paused:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 rewards = []
 
@@ -670,7 +657,7 @@ def run():
 
         print("Chosen Speed:", speed, " Chosen Angle:", angle, " Reward:", max_reward["reward"])
 
-        if paused == False and args.debug:
+        if not paused and args.debug:
             print("pick {} {}".format(max_reward, rewards))
 
         # moving
@@ -681,7 +668,7 @@ def run():
 
         # laptime
         s = "{:3.3f}".format(race_time)
-        laptime = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
+        lap_time = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
 
         # speed
         speed_display = font.render("Speed: " + str(speed), True, COLOR_TEXT, COLOR_FLOOR)
@@ -700,7 +687,7 @@ def run():
             s = "{:3.3f}".format(record)
             latest = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
 
-        surface.blit(laptime, laptime_rect)
+        surface.blit(lap_time, lap_time_rect)
         surface.blit(speed_display, speed_display_rect)
         surface.blit(reward_display, reward_display_rect)
         surface.blit(total_reward_display, total_reward_display_rect)
@@ -726,7 +713,6 @@ def run():
         clock.tick(FRAME_RATE)
 
     pygame.quit()
-
 
 def get_adjust():
     global g_scr_adjust
@@ -767,8 +753,8 @@ def get_adjust():
 
     return g_scr_adjust, g_scr_rate, g_scr_width, g_scr_height
 
-
 def get_waypoints(key):
+    '''Get list of waypoints for the given key'''
     if key == "center":
         return track.get_center_waypoints()
     elif key == "inside":
@@ -793,12 +779,9 @@ def get_waypoints(key):
         return get_border_waypoints(track.get_center_waypoints(), track.get_outside_waypoints(), 0.9)
     return None
 
-
 def get_adjust_length(val):
     _, rate, _, _ = get_adjust()
-
     return int(val * rate)
-
 
 def get_adjust_point(point):
     adjust, rate, _, height = get_adjust()
@@ -810,13 +793,11 @@ def get_adjust_point(point):
     y = height - ((point[1] + adjust[1]) * rate)
     return [int(x), int(y)]
 
-
 def get_adjust_points(points):
     results = []
     for point in points:
         results.append(get_adjust_point(point))
     return results
-
 
 def get_merge_waypoints(points1, points2, rate=0.5):
     length = min(len(points1), len(points2))
@@ -829,7 +810,6 @@ def get_merge_waypoints(points1, points2, rate=0.5):
             ]
         )
     return results
-
 
 def get_border_waypoints(points1, points2, rate=1.2):
     length = min(len(points1), len(points2))
@@ -844,7 +824,6 @@ def get_border_waypoints(points1, points2, rate=1.2):
             ]
         )
     return results
-
 
 if __name__ == "__main__":
     run()
