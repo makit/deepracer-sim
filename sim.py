@@ -56,7 +56,6 @@ track = Track_Loader(TRACK)
 
 def parse_args():
     params = argparse.ArgumentParser(description=TITLE)
-    params.add_argument("-c", "--crashed", default=False, action="store_true", help="crashed")
     params.add_argument("-d", "--draw-lines", default=False, action="store_true", help="draw lines")
     params.add_argument("-f", "--full-screen", default=False, action="store_true", help="full screen")
     params.add_argument("-s", "--speed", type=float, default=DEFAULT_SPEED, help="speed")
@@ -345,7 +344,7 @@ class Car:
 
         self.key_pressed = False
 
-        if paused == False:
+        if not paused:
             # pos
             if self.is_bot:
                 self.pos += self.vel
@@ -354,7 +353,7 @@ class Car:
 
         self.rect.center = get_adjust_point(self.pos)
 
-        if paused == False:
+        if not paused:
             # angle
             if self.is_bot:
                 if abs(angle) > 0:
@@ -562,8 +561,7 @@ def run():
         # Off track
         if closest_dist > (track_width * 0.55):
             offtrack = True
-            if args.crashed:
-                paused = True
+            paused = True
         else:
             offtrack = False
 
@@ -663,20 +661,21 @@ def run():
         # moving
         pos, heading = car.move(surface, angle, paused, offtrack, crashed, warned)
 
-        # time
-        race_time = time.time() - start_time
+        if not paused:
+            # time
+            race_time = time.time() - start_time
 
-        # laptime
-        s = "{:3.3f}".format(race_time)
-        lap_time = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
+            # laptime
+            s = "{:3.3f}".format(race_time)
+            lap_time = font.render(s, True, COLOR_TEXT, COLOR_FLOOR)
 
-        # speed
-        speed_display = font.render("Speed: " + str(speed), True, COLOR_TEXT, COLOR_FLOOR)
+            # speed
+            speed_display = font.render("Speed: " + str(speed), True, COLOR_TEXT, COLOR_FLOOR)
 
-        # reward
-        total_reward += max_reward["reward"]
-        reward_display = font.render("Reward: " + "{:3f}".format(max_reward["reward"]), True, COLOR_TEXT, COLOR_FLOOR)
-        total_reward_display = font.render("Total Reward: " + "{:3f}".format(total_reward), True, COLOR_TEXT, COLOR_FLOOR)
+            # reward
+            total_reward += max_reward["reward"]
+            reward_display = font.render("Reward: " + "{:3f}".format(max_reward["reward"]), True, COLOR_TEXT, COLOR_FLOOR)
+            total_reward_display = font.render("Total Reward: " + "{:3f}".format(total_reward), True, COLOR_TEXT, COLOR_FLOOR)
 
         if progress == 0 and prev_time > 5:
             record = prev_time
